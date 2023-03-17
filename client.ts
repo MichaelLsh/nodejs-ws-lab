@@ -8,12 +8,37 @@ interface ICoords {
   y: number;
 }
 
+function uuid(
+  a?: any               // placeholder
+): string {
+  return a              // if the placeholder was passed, return
+    ? (                 // a random number from 0 to 15
+      a ^               // unless b is 8,
+      Math.random()     // in which case
+      * 16              // a random number from
+      >> a / 4          // 8 to 11
+    ).toString(16)      // in hexadecimal
+    : (                 // or otherwise a concatenated string:
+      1e7.toString() +  // 10000000 +
+      -1e3 +            // -1000 +
+      -4e3 +            // -4000 +
+      -8e3 +            // -80000000 +
+      -1e11             // -100000000000,
+    ).replace(          // replacing
+      /[018]/g,         // zeroes, ones, and eights with
+      uuid              // random hex digits
+    )
+}
+
 class GameScene extends Phaser.Scene {
   private HOST = window.location.hostname; // localhost and 127.0.0.1 handled
   private PORT = 8080; // change this if needed
 
   private wsClient?: WebSocket;
   private sprite?: Phaser.GameObjects.Sprite;
+
+  private id = uuid();
+  private players: {[key: string]: Phaser.GameObjects.Sprite} = {};
 
   constructor() { super({ key: "GameScene" }); }
 
@@ -80,11 +105,27 @@ class GameScene extends Phaser.Scene {
    * Create the game objects required by the scene
    */
   public create() {
-    // Create an interactive, draggable bunny sprite
-    this.sprite = this.add.sprite(100, 100, "bunny");
-    this.sprite.setInteractive();
-    this.input.setDraggable(this.sprite);
+    // ...
+    this.players[this.id] = this.physics.add.sprite(48, 48, "player", 1);
+    this.physics.add.collider(this.players[this.id], layer);
+    this.cameras.main.startFollow(this.players[this.id]);
   }
+  
+  
+  // update
+  public update() {
+    if (this.players[this.id]) {
+      const player = this.players[this.id];
+      let moving = false;
+  
+      if (this.leftKey && this.leftKey.isDown) {
+        (player.body as Phaser.Physics.Arcade.Body).setVelocityX(-this.VELOCITY);
+        player.play("left", true);
+        moving = true;
+      }
+      // ...
+      player.update();
+    }
 }
 
 
